@@ -53,6 +53,10 @@ func (o *Omap) Set(key, val any) {
 
 // SetByOmap insert and overwrite update the kv value of another Omap
 func (o *Omap) SetByOmap(o2 *Omap) {
+	if o2 == nil {
+		return
+	}
+
 	if o == o2 {
 		return
 	}
