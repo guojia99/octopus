@@ -8,7 +8,7 @@ func TestOmap_Clear(t *testing.T) {
 	omap := NewMap()
 
 	omap.Set("key1", "value1")
-	omap.SetByOmap(omap)
+	omap.SetByMap(omap)
 
 	omap.Clear()
 	if omap.list.Len() > 0 {

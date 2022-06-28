@@ -1,3 +1,6 @@
+/*
+	this file is use go 1.18 generics
+*/
 package omap
 
 import (
@@ -9,71 +12,72 @@ import (
 	"sync"
 )
 
-type okv struct {
-	key any
-	val any
+type kv[k comparable, v any] struct {
+	key k
+	val v
 }
 
-// Map with read-write locks, sequential keys
-type Map struct {
+// OMap with read-write locks, sequential keys
+type OMap[k comparable, v any] struct {
 	lock sync.RWMutex
 	list *list.List
-	val  map[any]*list.Element
+	// [WARN] If the idea reminds, please ignore the error
+	// `Invalid OMap key type: comparison operators == and != must be fully defined for the key type`
+	// your can look https://youtrack.jetbrains.com/issue/GO-12615
+	val map[k]*list.Element
 }
 
-// NewMap Create a new Map
-func NewMap() *Map {
-	return &Map{
+// NewOMap Create a new OMap
+func NewOMap[k comparable, v any]() *OMap[k, v] {
+	return &OMap[k, v]{
 		lock: sync.RWMutex{},
 		list: list.New(),
-		val:  make(map[any]*list.Element),
+		val:  make(map[k]*list.Element),
 	}
 }
 
-func (o *Map) Val() map[any]any {
+func (o *OMap[k, v]) Val() (out map[k]v) {
 	o.lock.RLock()
 	defer o.lock.RUnlock()
 
-	var out = make(map[any]any)
-
+	out = make(map[k]v)
 	for key := range o.val {
-		out[key] = o.val[key].Value.(*okv).val
+		out[key] = o.val[key].Value.(*kv[k, v]).val
 	}
 	return out
 }
 
-// Copy Completely copy a new Map
-func (o *Map) Copy() *Map {
+// Copy Completely copy a new OMap
+func (o *OMap[k, v]) Copy() (out *OMap[k, v]) {
 	o.lock.Lock()
 	defer o.lock.Unlock()
 
-	newMap := NewMap()
+	out = NewOMap[k, v]()
 	for el := o.list.Front(); el != nil; el = el.Next() {
-		data := el.Value.(*okv)
-		newMap.Set(data.key, data.val)
+		data := el.Value.(*kv[k, v])
+		out.Set(data.key, data.val)
 	}
-	return newMap
+	return
 }
 
 // Set the value according to key and val
-func (o *Map) Set(key, val any) {
+func (o *OMap[k, v]) Set(key k, val v) {
 	o.lock.Lock()
 	defer o.lock.Unlock()
 
 	el, ok := o.val[key]
 	if ok {
-		el.Value.(*okv).val = val
+		el.Value.(*kv[k, v]).val = val
 		return
 	}
-	o.val[key] = o.list.PushBack(&okv{key: key, val: val})
+	o.val[key] = o.list.PushBack(&kv[k, v]{key: key, val: val})
 }
 
-// SetByMap insert and overwrite update the okv value of another Map
-func (o *Map) SetByMap(o2 *Map) {
+// SetByOMap insert and overwrite update the okv value of another OMap
+func (o *OMap[k, v]) SetByOMap(o2 *OMap[k, v]) {
 	if o2 == nil {
 		return
 	}
-
 	if o == o2 {
 		return
 	}
@@ -82,29 +86,29 @@ func (o *Map) SetByMap(o2 *Map) {
 	defer o.lock.Unlock()
 
 	for _, newKey := range o2.Keys() {
-		newVal := o2.val[newKey].Value.(*okv).val
+		newVal := o2.val[newKey].Value.(*kv[k, v]).val
 		if el, ok := o.val[newKey]; ok {
-			el.Value.(*okv).val = newVal
+			el.Value.(*kv[k, v]).val = newVal
 			continue
 		}
-		o.val[newKey] = o.list.PushBack(&okv{key: newKey, val: newVal})
+		o.val[newKey] = o.list.PushBack(&kv[k, v]{key: newKey, val: newVal})
 	}
 }
 
 // Get value by key
-func (o *Map) Get(key any) (any, bool) {
+func (o *OMap[k, v]) Get(key k) (val v, ok bool) {
 	o.lock.RLock()
 	defer o.lock.RUnlock()
 
 	el, ok := o.val[key]
 	if !ok {
-		return nil, false
+		return
 	}
-	return el.Value.(*okv).val, true
+	return el.Value.(*kv[k, v]).val, true
 }
 
 // Has Check if a key value exists
-func (o *Map) Has(key any) bool {
+func (o *OMap[k, v]) Has(key k) bool {
 	o.lock.RLock()
 	defer o.lock.RUnlock()
 
@@ -113,26 +117,26 @@ func (o *Map) Has(key any) bool {
 }
 
 // GetByValue find out the key value based on the value
-func (o *Map) GetByValue(val any) (key any, ok bool) {
+func (o *OMap[k, v]) GetByValue(val v) (key k, ok bool) {
 	o.lock.RLock()
 	defer o.lock.RUnlock()
 
 	for el := o.list.Front(); el != nil; el = el.Next() {
-		data := el.Value.(*okv)
+		data := el.Value.(*kv[k, v])
 		if reflect.DeepEqual(data.val, val) {
 			return data.key, true
 		}
 	}
-	return nil, false
+	return
 }
 
-// GetByIndex the key according to the first value of the map
-func (o *Map) GetByIndex(idx int) (any, bool) {
+// GetByIndex the key according to the first value of the OMap
+func (o *OMap[k, v]) GetByIndex(idx int) (val v, ok bool) {
 	o.lock.RLock()
 	defer o.lock.RUnlock()
 
 	if o.Len() < int(math.Abs(float64(idx))) {
-		return nil, false
+		return
 	}
 
 	el := o.list.Front()
@@ -141,18 +145,18 @@ func (o *Map) GetByIndex(idx int) (any, bool) {
 		for i := 0; i < idx; i++ {
 			el = el.Next()
 		}
-		return nil, false
+		return
 	case idx < 0:
 		el = o.list.Back()
 		for i := 0; i > idx; i-- {
 			el = el.Prev()
 		}
 	}
-	return el.Value.(*okv).val, true
+	return el.Value.(*kv[k, v]).val, true
 }
 
 // Remove key value
-func (o *Map) Remove(key any) {
+func (o *OMap[k, v]) Remove(key k) {
 	o.lock.Lock()
 	defer o.lock.Unlock()
 
@@ -162,8 +166,8 @@ func (o *Map) Remove(key any) {
 	}
 }
 
-// Clear Map
-func (o *Map) Clear() {
+// Clear OMap
+func (o *OMap[k, v]) Clear() {
 	keys := o.Keys()
 
 	o.lock.Lock()
@@ -177,23 +181,23 @@ func (o *Map) Clear() {
 }
 
 // Keys extract the list of keys
-func (o *Map) Keys() []any {
+func (o *OMap[k, v]) Keys() []k {
 	o.lock.RLock()
 	defer o.lock.RUnlock()
 
-	out := make([]any, o.list.Len())
+	out := make([]k, o.list.Len())
 	for i, el := 0, o.list.Front(); el != nil; i++ {
-		out[i] = el.Value.(*okv).key
+		out[i] = el.Value.(*kv[k, v]).key
 		el = el.Next()
 	}
 	return out
 }
 
-// Len Map length
-func (o *Map) Len() int { return o.list.Len() }
+// Len OMap length
+func (o *OMap[k, v]) Len() int { return o.list.Len() }
 
 // Swap two key
-func (o *Map) Swap(key1, key2 any) (err error) {
+func (o *OMap[k, v]) Swap(key1, key2 k) (err error) {
 	o.lock.Lock()
 	defer o.lock.Unlock()
 
@@ -211,30 +215,30 @@ func (o *Map) Swap(key1, key2 any) (err error) {
 }
 
 // Search find a set that matches the keys
-func (o *Map) Search(keys ...any) *Map {
+func (o *OMap[k, v]) Search(keys ...k) *OMap[k, v] {
 	o.lock.RLock()
 	defer o.lock.RUnlock()
 
-	newMap := NewMap()
+	newOMap := NewOMap[k, v]()
 	for _, key := range keys {
 		if el, ok := o.val[key]; ok {
-			newMap.Set(key, el.Value.(*okv).val)
+			newOMap.Set(key, el.Value.(*kv[k, v]).val)
 		}
 	}
-	return newMap
+	return newOMap
 }
 
 // Filter a collection that meets the requirements
-func (o *Map) Filter(f func(key any, val any) bool) *Map {
+func (o *OMap[k, v]) Filter(f func(key k, val v) bool) *OMap[k, v] {
 	o.lock.RLock()
 	defer o.lock.RUnlock()
 
-	newMap := NewMap()
+	newOMap := NewOMap[k, v]()
 	for _, key := range o.Keys() {
-		val := o.val[key].Value.(*okv).val
+		val := o.val[key].Value.(*kv[k, v]).val
 		if ok := f(key, val); ok {
-			newMap.Set(key, val)
+			newOMap.Set(key, val)
 		}
 	}
-	return newMap
+	return newOMap
 }
