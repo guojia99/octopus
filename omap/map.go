@@ -9,7 +9,7 @@ import (
 	"sync"
 )
 
-type okv struct {
+type kv struct {
 	key any
 	val any
 }
@@ -30,6 +30,7 @@ func NewMap() *Map {
 	}
 }
 
+// Val get all metadata
 func (o *Map) Val() map[any]any {
 	o.lock.RLock()
 	defer o.lock.RUnlock()
@@ -37,7 +38,7 @@ func (o *Map) Val() map[any]any {
 	var out = make(map[any]any)
 
 	for key := range o.val {
-		out[key] = o.val[key].Value.(*okv).val
+		out[key] = o.val[key].Value.(*kv).val
 	}
 	return out
 }
@@ -49,7 +50,7 @@ func (o *Map) Copy() *Map {
 
 	newMap := NewMap()
 	for el := o.list.Front(); el != nil; el = el.Next() {
-		data := el.Value.(*okv)
+		data := el.Value.(*kv)
 		newMap.Set(data.key, data.val)
 	}
 	return newMap
@@ -62,13 +63,13 @@ func (o *Map) Set(key, val any) {
 
 	el, ok := o.val[key]
 	if ok {
-		el.Value.(*okv).val = val
+		el.Value.(*kv).val = val
 		return
 	}
-	o.val[key] = o.list.PushBack(&okv{key: key, val: val})
+	o.val[key] = o.list.PushBack(&kv{key: key, val: val})
 }
 
-// SetByMap insert and overwrite update the okv value of another Map
+// SetByMap insert and overwrite update the kv value of another Map
 func (o *Map) SetByMap(o2 *Map) {
 	if o2 == nil {
 		return
@@ -82,12 +83,12 @@ func (o *Map) SetByMap(o2 *Map) {
 	defer o.lock.Unlock()
 
 	for _, newKey := range o2.Keys() {
-		newVal := o2.val[newKey].Value.(*okv).val
+		newVal := o2.val[newKey].Value.(*kv).val
 		if el, ok := o.val[newKey]; ok {
-			el.Value.(*okv).val = newVal
+			el.Value.(*kv).val = newVal
 			continue
 		}
-		o.val[newKey] = o.list.PushBack(&okv{key: newKey, val: newVal})
+		o.val[newKey] = o.list.PushBack(&kv{key: newKey, val: newVal})
 	}
 }
 
@@ -100,7 +101,7 @@ func (o *Map) Get(key any) (any, bool) {
 	if !ok {
 		return nil, false
 	}
-	return el.Value.(*okv).val, true
+	return el.Value.(*kv).val, true
 }
 
 // Has Check if a key value exists
@@ -118,7 +119,7 @@ func (o *Map) GetByValue(val any) (key any, ok bool) {
 	defer o.lock.RUnlock()
 
 	for el := o.list.Front(); el != nil; el = el.Next() {
-		data := el.Value.(*okv)
+		data := el.Value.(*kv)
 		if reflect.DeepEqual(data.val, val) {
 			return data.key, true
 		}
@@ -148,7 +149,7 @@ func (o *Map) GetByIndex(idx int) (any, bool) {
 			el = el.Prev()
 		}
 	}
-	return el.Value.(*okv).val, true
+	return el.Value.(*kv).val, true
 }
 
 // Remove key value
@@ -183,7 +184,7 @@ func (o *Map) Keys() []any {
 
 	out := make([]any, o.list.Len())
 	for i, el := 0, o.list.Front(); el != nil; i++ {
-		out[i] = el.Value.(*okv).key
+		out[i] = el.Value.(*kv).key
 		el = el.Next()
 	}
 	return out
@@ -218,7 +219,7 @@ func (o *Map) Search(keys ...any) *Map {
 	newMap := NewMap()
 	for _, key := range keys {
 		if el, ok := o.val[key]; ok {
-			newMap.Set(key, el.Value.(*okv).val)
+			newMap.Set(key, el.Value.(*kv).val)
 		}
 	}
 	return newMap
@@ -231,7 +232,7 @@ func (o *Map) Filter(f func(key any, val any) bool) *Map {
 
 	newMap := NewMap()
 	for _, key := range o.Keys() {
-		val := o.val[key].Value.(*okv).val
+		val := o.val[key].Value.(*kv).val
 		if ok := f(key, val); ok {
 			newMap.Set(key, val)
 		}
