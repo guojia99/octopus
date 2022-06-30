@@ -6,16 +6,16 @@ import (
 	"sync"
 )
 
-type Array struct {
+type OArray[T comparable] struct {
 	lock sync.RWMutex
-	val  []any
+	val  []T
 }
 
-// NewArray create a new array
-func NewArray(val ...any) *Array {
-	a := &Array{
+// NewOArray create a new array
+func NewOArray[T comparable](val ...T) *OArray[T] {
+	a := &OArray[T]{
 		lock: sync.RWMutex{},
-		val:  make([]any, 0),
+		val:  make([]T, 0),
 	}
 	if len(val) > 0 {
 		a.val = append(a.val, val...)
@@ -24,11 +24,11 @@ func NewArray(val ...any) *Array {
 }
 
 // Copy a new array without interfering with each other
-func (a *Array) Copy() *Array {
+func (a *OArray[T]) Copy() *OArray[T] {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
-	newArray := NewArray()
+	newArray := NewOArray[T]()
 	for _, val := range a.val {
 		newArray.Set(val)
 	}
@@ -36,16 +36,16 @@ func (a *Array) Copy() *Array {
 }
 
 // Len with array length
-func (a *Array) Len() int { return len(a.val) }
+func (a *OArray[T]) Len() int { return len(a.val) }
 
 // IsEmpty is the array not empty
-func (a *Array) IsEmpty() bool { return a.Len() == 0 }
+func (a *OArray[T]) IsEmpty() bool { return a.Len() == 0 }
 
 // Val returns the current raw data
-func (a *Array) Val() []any { return a.Copy().val }
+func (a *OArray[T]) Val() []T { return a.Copy().val }
 
 // Set insert 1-n data
-func (a *Array) Set(value ...any) {
+func (a *OArray[T]) Set(value ...T) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
@@ -53,7 +53,7 @@ func (a *Array) Set(value ...any) {
 }
 
 // GetByIndex the data of a subscript
-func (a *Array) GetByIndex(idx int) (any, error) {
+func (a *OArray[T]) GetByIndex(idx int) (T, error) {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
@@ -64,7 +64,7 @@ func (a *Array) GetByIndex(idx int) (any, error) {
 }
 
 // GetSlice get a slice
-func (a *Array) GetSlice(start, end int) ([]any, error) {
+func (a *OArray[T]) GetSlice(start, end int) ([]T, error) {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
@@ -79,7 +79,7 @@ func (a *Array) GetSlice(start, end int) ([]any, error) {
 }
 
 // HasValueFirst find the first index with the same value
-func (a *Array) HasValueFirst(value any) (int, bool) {
+func (a *OArray[T]) HasValueFirst(value T) (int, bool) {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
@@ -92,7 +92,7 @@ func (a *Array) HasValueFirst(value any) (int, bool) {
 }
 
 // HasValueAll find all index with the same value
-func (a *Array) HasValueAll(value any) ([]int, bool) {
+func (a *OArray[T]) HasValueAll(value T) ([]int, bool) {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
@@ -109,7 +109,7 @@ func (a *Array) HasValueAll(value any) ([]int, bool) {
 }
 
 // Reverse flip the entire array
-func (a *Array) Reverse() {
+func (a *OArray[T]) Reverse() {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
@@ -121,7 +121,7 @@ func (a *Array) Reverse() {
 }
 
 // RandomOne output a random
-func (a *Array) RandomOne() any {
+func (a *OArray[T]) RandomOne() T {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
@@ -129,11 +129,11 @@ func (a *Array) RandomOne() any {
 }
 
 // Filter a new array with func
-func (a *Array) Filter(f func(value any) bool) *Array {
+func (a *OArray[T]) Filter(f func(value T) bool) *OArray[T] {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
-	newArray := NewArray()
+	newArray := NewOArray[T]()
 	for _, val := range a.val {
 		if f(val) {
 			newArray.Set(val)
@@ -143,11 +143,11 @@ func (a *Array) Filter(f func(value any) bool) *Array {
 }
 
 // Remove delete the required value
-func (a *Array) Remove(value any) {
+func (a *OArray[T]) Remove(value T) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
-	newVal := make([]any, 0)
+	newVal := make([]T, 0)
 	for _, val := range a.val {
 		if val != value {
 			newVal = append(newVal, val)
