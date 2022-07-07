@@ -1,6 +1,7 @@
 package omap
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -52,4 +53,17 @@ func TestOmap_GetByValue(t *testing.T) {
 	if key, ok := omap.GetByValue("wantValue"); !ok || key != "wantKey" {
 		t.Errorf("get by value error")
 	}
+}
+
+func TestMap_Marshal(t *testing.T) {
+	omap := NewMap()
+
+	omap.Set("wantKey1", "wantValue")
+	omap.Set("notKey2", "notValue")
+
+	data, err := omap.Marshal()
+	if err != nil {
+		t.Error(err)
+	}
+	fmt.Println(string(data))
 }

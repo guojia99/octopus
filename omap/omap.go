@@ -9,7 +9,10 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strings"
 	"sync"
+
+	json "github.com/json-iterator/go"
 )
 
 type okv[k comparable, v any] struct {
@@ -242,4 +245,22 @@ func (o *OMap[k, v]) Filter(f func(key k, val v) bool) *OMap[k, v] {
 		}
 	}
 	return newOMap
+}
+
+func (o *OMap[k, v]) Marshal() ([]byte, error) {
+	o.lock.RLock()
+	defer o.lock.RUnlock()
+
+	items := make([]string, 0, o.Len())
+
+	for i, el := 0, o.list.Front(); el != nil; i++ {
+		data := el.Value.(*okv[k, v])
+		b, err := json.Marshal(map[any]any{data.key: data.val})
+		if err != nil {
+			return nil, err
+		}
+		el = el.Next()
+		items = append(items, string(b))
+	}
+	return []byte(fmt.Sprintf("{%s}", strings.Join(items, ","))), nil
 }

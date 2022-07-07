@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strings"
 	"sync"
+
+	json "github.com/json-iterator/go"
 )
 
 type kv struct {
@@ -238,4 +241,22 @@ func (o *Map) Filter(f func(key any, val any) bool) *Map {
 		}
 	}
 	return newMap
+}
+
+func (o *Map) Marshal() ([]byte, error) {
+	o.lock.RLock()
+	defer o.lock.RUnlock()
+
+	items := make([]string, 0, o.Len())
+
+	for i, el := 0, o.list.Front(); el != nil; i++ {
+		data := el.Value.(*kv)
+		b, err := json.Marshal(map[any]any{data.key: data.val})
+		if err != nil {
+			return nil, err
+		}
+		el = el.Next()
+		items = append(items, string(b))
+	}
+	return []byte(fmt.Sprintf("{%s}", strings.Join(items, ","))), nil
 }

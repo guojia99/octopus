@@ -23,6 +23,9 @@ func main() {
 	fmt.Println("val -->", m.Val())
 	fmt.Println("len -->", m.Len())
 
+	buff, _ := m.Marshal()
+	fmt.Println("json ->", string(buff))
+
 	getData, _ := m.Get(float64(1))
 	fmt.Println("get -->", getData)
 	hasData := m.Has(float64(2))

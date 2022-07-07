@@ -53,12 +53,13 @@ func (a *OArray[T]) Set(value ...T) {
 }
 
 // GetByIndex the data of a subscript
-func (a *OArray[T]) GetByIndex(idx int) (T, error) {
+func (a *OArray[T]) GetByIndex(idx int) (val T, err error) {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
 	if idx > a.Len() {
-		return nil, fmt.Errorf("subscript out of range")
+		err = fmt.Errorf("subscript out of range")
+		return
 	}
 	return a.val[idx], nil
 }

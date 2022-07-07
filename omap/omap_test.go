@@ -5,36 +5,36 @@ import (
 	"testing"
 )
 
-func TestNewMap(t *testing.T) {
+func TestNewOMap(t *testing.T) {
 
 	t.Run("int2intMap", func(t *testing.T) {
-		t.Log(NewMap[int, int]())
+		t.Log(NewOMap[int, int]())
 	})
 
 	t.Run("int2stringMap", func(t *testing.T) {
-		t.Log(NewMap[int, string]())
+		t.Log(NewOMap[int, string]())
 	})
 
 	t.Run("bool2stringMap", func(t *testing.T) {
-		t.Log(NewMap[bool, string]())
+		t.Log(NewOMap[bool, string]())
 	})
 
 	t.Run("float2intMap", func(t *testing.T) {
-		t.Log(NewMap[float64, int]())
+		t.Log(NewOMap[float64, int]())
 	})
 }
 
 func TestMap_SetGet(t *testing.T) {
-	c := NewMap[float64, []byte]()
+	c := NewOMap[float64, []byte]()
 	c.Set(1, []byte{1, 2, 3})
 	fmt.Println(c.Get(1))
 }
 
 func TestMap_SetByMap(t *testing.T) {
-	c := NewMap[float64, []byte]()
+	c := NewOMap[float64, []byte]()
 	c.Set(1, []byte{1, 2, 3})
-	c2 := NewMap[float64, []byte]()
+	c2 := NewOMap[float64, []byte]()
 	c2.Set(2, []byte{4, 5, 6})
-	c.SetByMap(c2)
+	c.SetByOMap(c2)
 	fmt.Println(c.Val())
 }
