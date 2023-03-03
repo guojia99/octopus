@@ -1,5 +1,0 @@
-package dp
-
-func init() {
-
-}

@@ -4,4 +4,10 @@
  *  * Author: guojia(https://github.com/guojia99)
  */
 
-package omap
+package ofunc
+
+type TempsFunc interface {
+	Call(args ...interface{}) (out []interface{})
+	Update(fn interface{}) error
+	Delete(fn interface{})
+}
