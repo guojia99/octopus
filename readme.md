@@ -22,4 +22,4 @@
 - 使用方法参见 [`array example`](./_example/array) 
 ### 3、OFunc
 - [`ofunc`](./ofunc): go函数操作集合
-  - Try-Catch: 错误捕捉操作, 使用方法见[`try_catch_example`](./_example/func/try_catch.go)
+  - Try-Catch: 错误捕捉操作, 使用方法见[`try_catch_example`](./_example/func/README.md)
